@@ -1,0 +1,6 @@
+# Secrets
+token.json
+*.env
+
+# Python Noise
+__pycache__/

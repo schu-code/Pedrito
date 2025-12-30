@@ -5,7 +5,7 @@ from random import uniform, randint
 from typing import Optional, List
 import math
 import threading
-from backend.ingestion import ingestion_loop
+from backend.ingestion import fetch_schwab_option_chain
 
 from backend.database import init_db, get_connection
 
