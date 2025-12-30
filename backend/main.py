@@ -13,27 +13,13 @@ from backend.database import init_db, get_connection
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ---- STARTUP ----
-
-    # Initialize database
     init_db()
-
-    # Start ingestion loop in a background thread
-    ingestion_thread = threading.Thread(
-        target=ingestion_loop,
-        kwargs={
-            "symbol": "NQ",
-            "interval_seconds": 30,
-            "batch_size": 20
-        },
-        daemon=True
-    )
-    ingestion_thread.start()
 
     # App runs here
     yield
 
     # ---- SHUTDOWN ----
-    # Daemon thread will stop automatically when app exits
+    # Nothing to clean up yet
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -393,6 +379,17 @@ def cumulative_volume_profile(
         })
 
     return result
+
+
+@app.get("/test/schwab")
+def test_schwab(symbol: str = "SPY"):
+    data = fetch_schwab_option_chain(symbol)
+
+    return {
+        "symbol": data.get("symbol"),
+        "underlyingPrice": data.get("underlyingPrice"),
+        "status": "ok"
+    }
 
 
 
