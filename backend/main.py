@@ -57,6 +57,7 @@ def ingest_fake_data(symbol: str = "NQ"):
         "timestamp": timestamp
     }
 
+
 @app.get("/data")
 def read_data(
     symbol: str,
@@ -100,6 +101,7 @@ def read_data(
     conn.close()
 
     return [dict(row) for row in rows]
+
 
 @app.get("/volume-by-strike")
 def volume_by_strike(
