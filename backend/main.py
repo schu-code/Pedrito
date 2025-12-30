@@ -179,3 +179,50 @@ def volume_by_strike_bucketed(
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+@app.get("/poc")
+def point_of_control(
+    symbol: str,
+    bucket_size: float = 5.0,
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT
+            CAST(FLOOR(strike / ?) * ? AS REAL) AS strike_bucket,
+            SUM(volume) AS total_volume
+        FROM market_data
+        WHERE symbol = ?
+    """
+    params = [bucket_size, bucket_size, symbol]
+
+    if start is not None:
+        query += " AND timestamp >= ?"
+        params.append(start)
+
+    if end is not None:
+        query += " AND timestamp <= ?"
+        params.append(end)
+
+    query += """
+        GROUP BY strike_bucket
+        ORDER BY total_volume DESC
+        LIMIT 1
+    """
+
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    conn.close()
+
+    # If no data exists for the query
+    if row is None:
+        return {"poc": None, "total_volume": 0}
+
+    return {
+        "poc": row["strike_bucket"],
+        "total_volume": row["total_volume"]
+    }
