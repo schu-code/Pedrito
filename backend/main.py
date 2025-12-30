@@ -4,17 +4,36 @@ from datetime import datetime
 from random import uniform, randint
 from typing import Optional, List
 import math
+import threading
+from backend.ingestion import ingestion_loop
 
 from backend.database import init_db, get_connection
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ---- startup ----
+    # ---- STARTUP ----
+
+    # Initialize database
     init_db()
+
+    # Start ingestion loop in a background thread
+    ingestion_thread = threading.Thread(
+        target=ingestion_loop,
+        kwargs={
+            "symbol": "NQ",
+            "interval_seconds": 30,
+            "batch_size": 20
+        },
+        daemon=True
+    )
+    ingestion_thread.start()
+
+    # App runs here
     yield
-    # ---- shutdown ----
-    # (nothing to clean up yet)
+
+    # ---- SHUTDOWN ----
+    # Daemon thread will stop automatically when app exits
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -317,3 +336,63 @@ def value_area(
         "value_area_volume": cumulative_volume,
         "value_area_pct": value_area_pct
     }
+
+
+@app.get("/cumulative-volume-profile")
+def cumulative_volume_profile(
+    symbol: str,
+    bucket_size: float = 5.0,
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Step 1: bucketed volume profile
+    query = """
+        SELECT
+            CAST(FLOOR(strike / ?) * ? AS REAL) AS strike_bucket,
+            SUM(volume) AS total_volume
+        FROM market_data
+        WHERE symbol = ?
+    """
+    params = [bucket_size, bucket_size, symbol]
+
+    if start is not None:
+        query += " AND timestamp >= ?"
+        params.append(start)
+
+    if end is not None:
+        query += " AND timestamp <= ?"
+        params.append(end)
+
+    query += """
+        GROUP BY strike_bucket
+        ORDER BY strike_bucket
+    """
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return []
+
+    profile = [dict(row) for row in rows]
+
+    # Step 2: cumulative volume calculation
+    cumulative = 0
+    result = []
+
+    for row in profile:
+        cumulative += row["total_volume"]
+        result.append({
+            "strike": row["strike_bucket"],
+            "volume": row["total_volume"],
+            "cumulative_volume": cumulative
+        })
+
+    return result
+
+
+
