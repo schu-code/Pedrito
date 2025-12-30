@@ -100,3 +100,40 @@ def read_data(
     conn.close()
 
     return [dict(row) for row in rows]
+
+@app.get("/volume-by-strike")
+def volume_by_strike(
+    symbol: str,
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT
+            strike,
+            SUM(volume) AS total_volume
+        FROM market_data
+        WHERE symbol = ?
+    """
+    params = [symbol]
+
+    if start is not None:
+        query += " AND timestamp >= ?"
+        params.append(start)
+
+    if end is not None:
+        query += " AND timestamp <= ?"
+        params.append(end)
+
+    query += """
+        GROUP BY strike
+        ORDER BY total_volume DESC
+    """
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
