@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from random import uniform, randint
 from typing import Optional, List
+import math
 
 from backend.database import init_db, get_connection
 
@@ -132,6 +133,45 @@ def volume_by_strike(
     query += """
         GROUP BY strike
         ORDER BY total_volume DESC
+    """
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+@app.get("/volume-by-strike-bucketed")
+def volume_by_strike_bucketed(
+    symbol: str,
+    bucket_size: float = 5.0,
+    start: Optional[str] = None,
+    end: Optional[str] = None
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = f"""
+        SELECT
+            CAST(FLOOR(strike / ?) * ? AS REAL) AS strike_bucket,
+            SUM(volume) AS total_volume
+        FROM market_data
+        WHERE symbol = ?
+    """
+    params = [bucket_size, bucket_size, symbol]
+
+    if start is not None:
+        query += " AND timestamp >= ?"
+        params.append(start)
+
+    if end is not None:
+        query += " AND timestamp <= ?"
+        params.append(end)
+
+    query += """
+        GROUP BY strike_bucket
+        ORDER BY strike_bucket
     """
 
     cursor.execute(query, params)
