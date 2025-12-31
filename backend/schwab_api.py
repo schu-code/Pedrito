@@ -7,7 +7,7 @@ from schwab import auth, client
 
 # Read secrets from environment variables
 SCHWAB_API_KEY = os.environ.get("SCHWAB_API_KEY")
-SCHWAB_TOKEN_PATH = os.environ.get("SCHWAB_TOKEN_PATH")
+SCHWAB_TOKEN_PATH = 'workspaces/Pedrito/token.json'
 
 if not SCHWAB_API_KEY or not SCHWAB_TOKEN_PATH:
     raise RuntimeError("Missing Schwab credentials in environment variables")
