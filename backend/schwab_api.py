@@ -20,7 +20,7 @@ def get_option_chain(symbol: str) -> dict:
     if not SCHWAB_CLIENT_ID or not SCHWAB_SECRET or not SCHWAB_TOKEN_PATH:
         raise RuntimeError(
             "Missing Schwab credentials. "
-            "Ensure SCHWAB_API_KEY, SCHWAB_CLIENT_SECRET, "
+            "Ensure SCHWAB_API_KEY, SCHWAB_SECRET, "
             "and SCHWAB_TOKEN_PATH are set."
         )
 
