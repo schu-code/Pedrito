@@ -6,7 +6,7 @@ from typing import Optional, List
 import math
 import threading
 from backend.ingestion import fetch_schwab_option_chain
-from backend.schwab_api import get_option_chain_today, get_option_chain, get_quotes
+from backend.schwab_api import get_option_chain_today, get_option_chain, get_quotes, get_price_history_raw
 
 from backend.database import init_db, get_connection
 
@@ -32,6 +32,7 @@ app = FastAPI(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 
 # Endpoint to ingest fake market data
@@ -110,6 +111,7 @@ def read_data(
     return [dict(row) for row in rows]
 
 
+
 @app.get("/volume-by-strike")
 def volume_by_strike(
     symbol: str,
@@ -146,6 +148,7 @@ def volume_by_strike(
     conn.close()
 
     return [dict(row) for row in rows]
+
 
 
 @app.get("/volume-by-strike-bucketed")
@@ -185,6 +188,7 @@ def volume_by_strike_bucketed(
     conn.close()
 
     return [dict(row) for row in rows]
+
 
 
 @app.get("/poc")
@@ -325,6 +329,7 @@ def value_area(
     }
 
 
+
 @app.get("/cumulative-volume-profile")
 def cumulative_volume_profile(
     symbol: str,
@@ -382,6 +387,7 @@ def cumulative_volume_profile(
     return result
 
 
+
 @app.get("/test/schwab")
 def test_schwab(symbol: str = "SPY"):
     data = fetch_schwab_option_chain(symbol)
@@ -391,6 +397,7 @@ def test_schwab(symbol: str = "SPY"):
         "underlyingPrice": data.get("underlyingPrice"),
         "status": "ok"
     }
+
 
 
 @app.get("/debug/schwab")
@@ -427,6 +434,7 @@ def debug_schwab_raw(symbol: str = "SPY"):
     return get_option_chain_today(symbol)
 
 
+
 @app.get("/debug/quotes")
 def debug_quotes(symbols: str = "SPY"):
     """
@@ -436,4 +444,9 @@ def debug_quotes(symbols: str = "SPY"):
     symbol_list = [s.strip() for s in symbols.split(",")]
     return get_quotes(symbol_list)
 
+
+
+@app.get("/debug/price-history")
+def debug_price_history(symbol: str = "SPY"):
+    return get_price_history_raw(symbol)
 

@@ -2,6 +2,7 @@
 
 import os
 import datetime
+import traceback
 from schwab import auth
 
 
@@ -9,6 +10,7 @@ from schwab import auth
 SCHWAB_CLIENT_ID = os.environ.get("SCHWAB_APP_KEY")
 SCHWAB_SECRET = os.environ.get("SCHWAB_SECRET")
 SCHWAB_TOKEN_PATH = os.environ.get("SCHWAB_TOKEN_PATH")
+
 
 
 def get_option_chain(symbol: str) -> dict:
@@ -36,6 +38,7 @@ def get_option_chain(symbol: str) -> dict:
         raise RuntimeError(f"Schwab API error {response.status_code}")
 
     return response.json()
+
 
 
 def get_option_chain_today(symbol: str) -> dict:
@@ -75,6 +78,7 @@ def get_option_chain_today(symbol: str) -> dict:
     return response.json()
 
 
+
 def get_quotes(symbols: list[str]) -> dict:
     """
     Fetch full quote data for one or more symbols.
@@ -101,3 +105,29 @@ def get_quotes(symbols: list[str]) -> dict:
         )
 
     return response.json()
+
+
+
+def get_price_history_raw(symbol: str):
+    if not SCHWAB_CLIENT_ID or not SCHWAB_SECRET or not SCHWAB_TOKEN_PATH:
+        raise RuntimeError("Missing Schwab credentials")
+
+    schwab_client = auth.client_from_token_file(
+        SCHWAB_TOKEN_PATH,
+        SCHWAB_CLIENT_ID,
+        SCHWAB_SECRET
+    )
+
+    response = schwab_client.get_price_history(
+        symbol,
+        period_type=schwab_client.PriceHistory.PeriodType.DAY,
+        period=schwab_client.PriceHistory.Period.ONE_DAY,
+        frequency_type=schwab_client.PriceHistory.FrequencyType.MINUTE,
+        frequency=schwab_client.PriceHistory.Frequency.EVERY_MINUTE,
+        need_extended_hours_data=True,
+        need_previous_close=True
+    )
+
+    return response.json()
+
+
