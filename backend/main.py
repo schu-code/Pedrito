@@ -6,6 +6,7 @@ from typing import Optional, List
 import math
 import threading
 from backend.ingestion import fetch_schwab_option_chain
+from backend.schwab_api import get_option_chain_today, get_option_chain, get_quotes
 
 from backend.database import init_db, get_connection
 
@@ -391,5 +392,48 @@ def test_schwab(symbol: str = "SPY"):
         "status": "ok"
     }
 
+
+@app.get("/debug/schwab")
+def debug_schwab(symbol: str = "SPY"):
+    data = fetch_schwab_option_chain(symbol)
+
+    call_map = data.get("callExpDateMap", {})
+    put_map = data.get("putExpDateMap", {})
+
+    # Grab one example contract if it exists
+    example_call = None
+    if call_map:
+        first_exp = next(iter(call_map.values()))
+        first_strike = next(iter(first_exp.values()))
+        example_call = first_strike[0]
+
+    return {
+        "top_level_keys": list(data.keys()),
+        "symbol": data.get("symbol"),
+        "underlyingPrice": data.get("underlyingPrice"),
+        "num_call_expirations": len(call_map),
+        "num_put_expirations": len(put_map),
+        "example_call_contract_keys": list(example_call.keys()) if example_call else None
+    }
+
+
+
+@app.get("/debug/schwab/raw")
+def debug_schwab_raw(symbol: str = "SPY"):
+    """
+    Return the full raw Schwab option-chain JSON.
+    WARNING: This is large.
+    """
+    return get_option_chain_today(symbol)
+
+
+@app.get("/debug/quotes")
+def debug_quotes(symbols: str = "SPY"):
+    """
+    Debug endpoint for raw Schwab quotes.
+    Pass symbols as comma-separated string.
+    """
+    symbol_list = [s.strip() for s in symbols.split(",")]
+    return get_quotes(symbol_list)
 
 
