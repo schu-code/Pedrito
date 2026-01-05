@@ -7,7 +7,7 @@ import math
 import threading
 from backend.ingestion import fetch_schwab_option_chain
 from backend.schwab_api import get_option_chain_today, get_option_chain, get_quotes, get_price_history_raw
-
+from backend.candle_queries import get_candles
 from backend.database import init_db, get_connection
 
 
@@ -449,4 +449,14 @@ def debug_quotes(symbols: str = "SPY"):
 @app.get("/debug/price-history")
 def debug_price_history(symbol: str = "SPY"):
     return get_price_history_raw(symbol)
+
+
+@app.get("/debug/candles")
+def debug_candles(
+    symbol: str = "SPY",
+    timeframe: str = "1d",
+    limit: int = 5
+):
+    candles = get_candles(symbol, timeframe)
+    return candles[-limit:]
 
