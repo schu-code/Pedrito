@@ -64,3 +64,30 @@ def init_db():
     
     # Close the connection to free resources
     conn.close()
+
+
+
+def init_candles_table():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS candles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            datetime TEXT NOT NULL,
+            open REAL NOT NULL,
+            high REAL NOT NULL,
+            low REAL NOT NULL,
+            close REAL NOT NULL,
+            volume INTEGER NOT NULL,
+            timeframe TEXT NOT NULL
+        )
+        """)
+
+        cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_candles_unique
+        ON candles (symbol, datetime, timeframe)
+        """)
+
+        conn.commit()

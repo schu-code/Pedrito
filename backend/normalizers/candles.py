@@ -1,6 +1,7 @@
 # backend/normalizers/candles.py
 
 import datetime
+from backend.database import init_db, get_connection
 
 # raw = get_price_history_raw("SPY")
 # candles = normalize_price_history("SPY", raw, timeframe="1m")
